@@ -21,7 +21,7 @@
         version = self.shortRev or self.dirtyShortRev;
       };
 
-      default = self.packages.${pkgs.system}.csd-titlebar-move;
+      default = self.packages.${pkgs.stdenv.hostPlatform.system}.csd-titlebar-move;
     });
 
     devShells = forAllSystems (pkgs: {

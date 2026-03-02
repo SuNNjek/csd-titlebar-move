@@ -3,28 +3,23 @@
   lib,
 
   hyprland,
+  hyprlandPlugins,
   pkg-config,
+  cmake,
 
   version,
-}: hyprland.stdenv.mkDerivation {
+}: hyprlandPlugins.mkHyprlandPlugin {
   pname = "csd-titlebar-move";
   inherit version;
 
   src = ../.;
 
-  nativeBuildInputs = [
-    pkg-config
-  ];
+  inherit (hyprland) nativeBuildInputs;
 
   buildInputs = [
     hyprland.dev
   ]
   ++ hyprland.buildInputs;
-
-  installPhase = ''
-    mkdir -p $out/lib/
-    cp csd-titlebar-move.so $out/lib/libcsd-titlebar-move.so
-  '';
 
   meta = {
     description = "CSD titlebar move";
