@@ -9,7 +9,7 @@
 
   version,
 }: hyprlandPlugins.mkHyprlandPlugin {
-  pname = "csd-titlebar-move";
+  pluginName = "csd-titlebar-move";
   inherit version;
 
   src = ../.;
