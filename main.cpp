@@ -1,12 +1,14 @@
 #define WLR_USE_UNSTABLE
 
 #include <hyprland/src/Compositor.hpp>
+#include <hyprland/src/event/EventBus.hpp>
+#include <hyprland/src/desktop/state/FocusState.hpp>
 #include <hyprland/src/managers/KeybindManager.hpp>
 
 #include "globals.hpp"
 
 // Methods
-void onClick(SCallbackInfo& info, IPointer::SButtonEvent e) {
+void onClick(IPointer::SButtonEvent e, Event::SCallbackInfo& info) {
     if (e.state == WL_POINTER_BUTTON_STATE_RELEASED)
         if (!info.cancelled)
             g_pKeybindManager->m_dispatchers["mouse"]("0movewindow");
@@ -18,7 +20,7 @@ void hkCXDGToplevelResConstructor(CXDGToplevelResource* thisptr, SP<CXdgToplevel
     resource->setMove([thisptr](CXdgToplevel* t, wl_resource* seat, uint32_t serial) {
         // treat it as down event, moustButton event is used for up event only
         if (auto window = thisptr->m_window.lock()) {
-            g_pCompositor->focusWindow(window);
+            Desktop::focusState()->rawWindowFocus(window, Desktop::eFocusReason::FOCUS_REASON_CLICK);
             g_pKeybindManager->m_dispatchers["mouse"]("1movewindow");
         }
     });
@@ -57,8 +59,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
         break;
     }
 
-    g_pMouseBtnCallback = HyprlandAPI::registerCallbackDynamic(
-        PHANDLE, "mouseButton", [&](void* self, SCallbackInfo& info, std::any param) { onClick(info, std::any_cast<IPointer::SButtonEvent>(param)); });
+    g_pMouseBtnCallback = Event::bus()->m_events.input.mouse.button.listen([&](IPointer::SButtonEvent e, Event::SCallbackInfo& info) { onClick(e, info); });
 
     bool success = g_pCXDGToplevelResConstructor && g_pMouseBtnCallback;
 
@@ -72,9 +73,7 @@ APICALL EXPORT PLUGIN_DESCRIPTION_INFO PLUGIN_INIT(HANDLE handle) {
 
     g_pCXDGToplevelResConstructor->hook();
 
-    if (success)
-        HyprlandAPI::addNotification(PHANDLE, "[csd-titlebar-move] Initialized successfully!", CHyprColor{0.2, 1.0, 0.2, 1.0}, 5000);
-    else {
+    if (!success) {
         HyprlandAPI::addNotification(PHANDLE, "[csd-titlebar-move] Failure in initialization (hook failed)!", CHyprColor{1.0, 0.2, 0.2, 1.0}, 5000);
         throw std::runtime_error("[csd-titlebar-move] Hooks failed");
     }
